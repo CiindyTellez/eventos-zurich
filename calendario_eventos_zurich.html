@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calendario de Eventos Zurich</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--text:#1f2937;--muted:#6b7280;--line:#e5e7eb;--accent:#0b5cab;--accent2:#e8f1fb}
+*{box-sizing:border-box} body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+header{background:#fff;border-bottom:1px solid var(--line);padding:22px 5%;position:sticky;top:0;z-index:5}
+h1{margin:0 0 5px;font-size:25px}.sub{color:var(--muted);font-size:14px}
+main{max-width:1200px;margin:25px auto;padding:0 18px}.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+button,select,input{border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 12px;font-size:14px}
+button{cursor:pointer}.primary{background:var(--accent);color:white;border-color:var(--accent)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 2px 8px #00000008}
+.calendar-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.month{font-size:20px;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid var(--line);border-left:1px solid var(--line)}
+.dow,.day{min-height:105px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:8px}.dow{min-height:auto;background:#fafafa;font-weight:700;font-size:12px;color:var(--muted)}
+.daynum{font-weight:700;font-size:13px}.event{margin-top:7px;background:var(--accent2);border-left:4px solid var(--accent);border-radius:6px;padding:6px;font-size:12px;cursor:pointer}
+.event small{display:block;color:var(--muted);margin-top:3px}.empty{background:#fafafa}
+.section{margin-top:20px}.section h2{font-size:18px}.table-wrap{overflow:auto}.sheet-tabs{display:flex;gap:6px;overflow:auto;margin-bottom:12px}
+.tab{white-space:nowrap}.tab.active{background:var(--accent);color:#fff}
+table{border-collapse:collapse;width:100%;font-size:13px}th,td{border:1px solid var(--line);padding:8px;text-align:left;vertical-align:top}th{background:#f8fafc}
+.modal{display:none;position:fixed;inset:0;background:#0008;align-items:center;justify-content:center;padding:20px;z-index:10}.modal.show{display:flex}
+.modalbox{max-width:700px;width:100%;background:#fff;border-radius:14px;padding:22px;max-height:85vh;overflow:auto}.close{float:right}
+@media(max-width:700px){.day{min-height:82px;padding:5px}.event{font-size:10px}.dow{font-size:10px}.grid{font-size:11px}}
+</style>
+</head>
+<body>
+<header><h1>Calendario de Eventos Zurich</h1><div class="sub">Vista web generada a partir del archivo Eventos Zurich.xlsx</div></header>
+<main>
+<div class="toolbar">
+<button onclick="prevMonth()">‹</button><button onclick="today()">Hoy</button><button onclick="nextMonth()">›</button>
+<span id="monthLabel" class="month"></span>
+<input id="search" placeholder="Buscar evento..." oninput="render()">
+</div>
+<div class="card">
+<div class="calendar-head"><strong>Eventos programados</strong><span id="count" class="sub"></span></div>
+<div id="calendar"></div>
+</div>
+<div class="section card"><h2>Datos del archivo</h2><div class="sheet-tabs" id="tabs"></div><div class="table-wrap" id="table"></div></div>
+</main>
+<div class="modal" id="modal" onclick="if(event.target===this)closeModal()"><div class="modalbox"><button class="close" onclick="closeModal()">Cerrar</button><h2 id="modalTitle"></h2><div id="modalBody"></div></div></div>
+<script>
+const payload = {"sheets": {"Eventos": [["2026", "", "", "", "", "", "", "", "", "", ""], ["AGOSTO", "", "", "", "", "", "", "", "", "", ""], ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom", "Fecha", "Responsable de evento", "Dirección", "Estatus"], ["2026-07-27", "2026-07-28", "2026-07-29", "2026-07-30", "2026-07-31", "2026-08-01", "2026-08-02", "2026-08-23", "Hilda Patricia Rosales", "Ed 12 int 102", "Apartado"], ["2026-08-03", "2026-08-04", "2026-08-05", "2026-08-06", "2026-08-07", "2026-08-08", "2026-08-09", "", "", "", ""], ["2026-08-10", "2026-08-11", "2026-08-12", "2026-08-13", "2026-08-14", "2026-08-15", "2026-08-16", "", "", "", ""], ["2026-08-17", "2026-08-18", "2026-08-19", "2026-08-20", "2026-08-21", "2026-08-22", "2026-08-23", "", "", "", ""], ["2026-08-24", "2026-08-25", "2026-08-26", "2026-08-27", "2026-08-28", "2026-08-29", "2026-08-30", "", "", "", ""], ["2026-08-31", "2026-09-01", "2026-09-02", "2026-09-03", "2026-09-04", "2026-09-05", "2026-09-06", "", "", "", ""]]}, "events": [{"sheet": "Eventos", "date": "2026-07-27", "values": ["2026-07-27", "2026-07-28", "2026-07-29", "2026-07-30", "2026-07-31", "2026-08-01", "2026-08-02", "2026-08-23", "Hilda Patricia Rosales", "Ed 12 int 102", "Apartado"]}, {"sheet": "Eventos", "date": "2026-08-03", "values": ["2026-08-03", "2026-08-04", "2026-08-05", "2026-08-06", "2026-08-07", "2026-08-08", "2026-08-09", "", "", "", ""]}, {"sheet": "Eventos", "date": "2026-08-10", "values": ["2026-08-10", "2026-08-11", "2026-08-12", "2026-08-13", "2026-08-14", "2026-08-15", "2026-08-16", "", "", "", ""]}, {"sheet": "Eventos", "date": "2026-08-17", "values": ["2026-08-17", "2026-08-18", "2026-08-19", "2026-08-20", "2026-08-21", "2026-08-22", "2026-08-23", "", "", "", ""]}, {"sheet": "Eventos", "date": "2026-08-24", "values": ["2026-08-24", "2026-08-25", "2026-08-26", "2026-08-27", "2026-08-28", "2026-08-29", "2026-08-30", "", "", "", ""]}, {"sheet": "Eventos", "date": "2026-08-31", "values": ["2026-08-31", "2026-09-01", "2026-09-02", "2026-09-03", "2026-09-04", "2026-09-05", "2026-09-06", "", "", "", ""]}]};
+let cur = new Date(); cur.setDate(1);
+let activeSheet = Object.keys(payload.sheets)[0] || "";
+const evs = payload.events || [];
+
+function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function labelDate(d){return d.toLocaleDateString('es-MX',{month:'long',year:'numeric'}).replace(/^./,x=>x.toUpperCase())}
+function eventTitle(e){return e.values.filter(Boolean).slice(1,4).join(" · ") || "Evento"}
+function render(){
+ document.getElementById('monthLabel').textContent=labelDate(cur);
+ const y=cur.getFullYear(), m=cur.getMonth(), first=new Date(y,m,1), last=new Date(y,m+1,0);
+ const start=(first.getDay()+6)%7, days=last.getDate();
+ let out='<div class="grid">'+['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map(x=>`<div class="dow">${x}</div>`).join('');
+ const q=document.getElementById('search').value.toLowerCase();
+ let shown=0;
+ for(let i=0;i<start;i++) out+='<div class="day empty"></div>';
+ for(let d=1;d<=days;d++){
+   const key=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+   const list=evs.filter(e=>e.date===key && JSON.stringify(e.values).toLowerCase().includes(q));
+   shown+=list.length;
+   out+=`<div class="day"><div class="daynum">${d}</div>${list.map((e,idx)=>`<div class="event" onclick='openEvent(${JSON.stringify(e)})'>${esc(eventTitle(e))}<small>${esc(e.sheet)}</small></div>`).join('')}</div>`;
+ }
+ out+='</div>'; document.getElementById('calendar').innerHTML=out;
+ document.getElementById('count').textContent=shown+' evento(s)';
+ renderTabs(); renderTable();
+}
+function renderTabs(){
+ document.getElementById('tabs').innerHTML=Object.keys(payload.sheets).map(s=>`<button class="tab ${s===activeSheet?'active':''}" onclick='activeSheet=${JSON.stringify(s)};render()'>${esc(s)}</button>`).join('');
+}
+function renderTable(){
+ const rows=payload.sheets[activeSheet]||[];
+ if(!rows.length){document.getElementById('table').innerHTML='';return}
+ let h='<table><tbody>';
+ rows.forEach((r,i)=>{h+='<tr>'+r.map(v=>(i===0?'<th>':'<td>')+esc(v)+(i===0?'</th>':'</td>')).join('')+'</tr>'});
+ h+='</tbody></table>'; document.getElementById('table').innerHTML=h;
+}
+function openEvent(e){
+ document.getElementById('modalTitle').textContent='Detalle del evento';
+ document.getElementById('modalBody').innerHTML='<p><strong>Hoja:</strong> '+esc(e.sheet)+'</p><table><tbody>'+e.values.map((v,i)=>v?`<tr><td><strong>Campo ${i+1}</strong></td><td>${esc(v)}</td></tr>`:'').join('')+'</tbody></table>';
+ document.getElementById('modal').classList.add('show');
+}
+function closeModal(){document.getElementById('modal').classList.remove('show')}
+function prevMonth(){cur.setMonth(cur.getMonth()-1);render()} function nextMonth(){cur.setMonth(cur.getMonth()+1);render()}
+function today(){let d=new Date();cur=new Date(d.getFullYear(),d.getMonth(),1);render()}
+render();
+</script>
+</body></html>
